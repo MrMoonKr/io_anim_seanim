@@ -25,7 +25,7 @@ def get_loc_vec( bone: bpy.types.PoseBone, anim_type ):
 # TODO: Support for SEANIM_TYPE_ADDITIVE
 
 
-def get_rot_quat(bone, anim_type):
+def get_rot_quat( bone: bpy.types.PoseBone, anim_type ):
     # Absolute, Relative, and Delta all use the same rotation formula
     try:
         bone.parent.matrix
