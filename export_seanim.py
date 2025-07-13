@@ -3,7 +3,7 @@ import bpy_types
 from mathutils import *
 from bpy_extras.wm_utils.progress_report import ProgressReport, ProgressReportSubstep
 import os
-from . import seanim as SEAnim
+from . import ExportSEAnim, seanim as SEAnim
 
 # <pep8 compliant>
 
@@ -13,10 +13,13 @@ from . import seanim as SEAnim
 g_scale = 1  # TODO - Proper scaling
 
 
-def get_loc_vec(bone, anim_type):
-    if (anim_type == SEAnim.SEANIM_TYPE.SEANIM_TYPE_ABSOLUTE and
-            bone.parent is not None):
+def get_loc_vec( bone: bpy.types.PoseBone, anim_type ):
+    '''
+        본의 로컬 위치변환 벡터를 조회합니다
+        '''
+    if ( anim_type == SEAnim.SEANIM_TYPE.SEANIM_TYPE_ABSOLUTE and bone.parent is not None ):
         return bone.parent.matrix.inverted() @ bone.matrix.translation
+    
     return bone.matrix_basis.translation
 
 # TODO: Support for SEANIM_TYPE_ADDITIVE
@@ -37,10 +40,10 @@ def get_rot_quat(bone, anim_type):
 # Generate a SEAnim compatible LOC keyframe from a given pose bone
 
 
-def gen_loc_key(frame, pose_bone, anim_type):
+def gen_loc_key( frame, pose_bone, anim_type ):
     # Remove the multiplication later
-    loc = get_loc_vec(pose_bone, anim_type) * g_scale
-    return SEAnim.KeyFrame(frame, (loc.x, loc.y, loc.z))
+    loc = get_loc_vec( pose_bone, anim_type ) * g_scale
+    return SEAnim.KeyFrame( frame, ( loc.x, loc.y, loc.z ) )
 
 # Generate a SEAnim compatible ROT keyframe from a given pose bone
 
@@ -73,7 +76,7 @@ def resolve_animtype(self):
     return type_dict.get(at)
 
 
-def export_action(self, context, progress, action, filepath):
+def export_action( self: ExportSEAnim, context: bpy.types.Context, progress: ProgressReport, action: bpy.types.Action, filepath: str ):
     # print("%s -> %s" % (action.name, filepath)) # DEBUG
 
     ob = bpy.context.object
@@ -97,20 +100,19 @@ def export_action(self, context, progress, action, filepath):
         For actions that only have keyframes on a single frame:
         this must be corrected later...
     """
-    frame_start = int(action.frame_range[0])
-    anim.header.frameCount = int(
-        action.frame_range[1]) - int(action.frame_range[0]) + 1
-    anim.header.framerate = context.scene.render.fps
+    frame_start             = int( action.frame_range[0] )
+    anim.header.frameCount  = int( action.frame_range[1] ) - int( action.frame_range[0] ) + 1
+    anim.header.framerate   = context.scene.render.fps
 
-    use_keys_loc = 'LOC' in self.key_types
-    use_keys_rot = 'ROT' in self.key_types
-    use_keys_scale = 'SCALE' in self.key_types
+    use_keys_loc            = 'LOC' in self.key_types
+    use_keys_rot            = 'ROT' in self.key_types
+    use_keys_scale          = 'SCALE' in self.key_types
 
     anim_bones = {}
 
     for pose_bone in ob.pose.bones:
-        anim_bone = SEAnim.Bone()
-        anim_bone.name = pose_bone.name
+        anim_bone           = SEAnim.Bone()
+        anim_bone.name      = pose_bone.name
         anim_bones[pose_bone.name] = anim_bone
 
     frames = {}
@@ -228,15 +230,14 @@ def export_action(self, context, progress, action, filepath):
         anim.notes.append(note)
 
     # Step 4: Writing File
-    anim.save(filepath, high_precision=self.high_precision,
-              looping=self.is_looped)
+    anim.save( filepath, high_precision=self.high_precision, looping=self.is_looped )
 
     # DEBUG - Verify that the written file is valid
     # SEAnim.LOG_ANIM_HEADER = True
     # SEAnim.Anim(filepath)
 
 
-def save(self, context):
+def save( self: ExportSEAnim, context: bpy.types.Context ):
     ob = bpy.context.object
     if ob.type != 'ARMATURE':
         return "An armature must be selected!"
@@ -244,33 +245,33 @@ def save(self, context):
     prefix = self.prefix  # os.path.basename(self.filepath)
     suffix = self.suffix
 
-    path = os.path.dirname(self.filepath)
-    path = os.path.normpath(path)
+    path = os.path.dirname( self.filepath )
+    path = os.path.normpath( path )
 
     # Gets automatically updated per-action if self.use_actions is true,
     # otherwise it stays the same
     filepath = self.filepath
 
-    with ProgressReport(context.window_manager) as progress:
+    with ProgressReport( context.window_manager ) as progress:
         actions = []
         if self.use_actions:
             actions = bpy.data.actions
         else:
             actions = [bpy.context.object.animation_data.action]
 
-        progress.enter_substeps(len(actions))
+        progress.enter_substeps( len( actions ) )
 
         for action in actions:
             if self.use_actions:
                 filename = prefix + action.name + suffix + ".seanim"
-                filepath = os.path.normpath(os.path.join(path, filename))
+                filepath = os.path.normpath( os.path.join( path, filename ) )
 
-            progress.enter_substeps(1, action.name)
+            progress.enter_substeps( 1, action.name )
             try:
-                export_action(self, context, progress, action, filepath)
+                export_action( self, context, progress, action, filepath )
             except Exception as e:
                 progress.leave_substeps("ERROR: " + repr(e))
             else:
                 progress.leave_substeps()
 
-        progress.leave_substeps("Finished!")
+        progress.leave_substeps( "Finished!" )

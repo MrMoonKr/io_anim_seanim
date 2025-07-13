@@ -1,3 +1,13 @@
+# 임포터 및 익스포터를 위한 Blender 애드온 샘플 예제로 적합.  
+# 블렌더 애드온 개발을 위한 기본 구조 예제로 적합.  
+# $ python -m venv .venv
+# $ .venv/Scripts/Activate.ps1
+# $ pip --version
+# $ pip list
+# $ pip install fake-bpy-module-latest
+# $ pip freeze > requirements.txt
+
+
 import bpy
 import bpy_extras.io_utils
 from bpy.types import Operator, AddonPreferences
@@ -5,6 +15,7 @@ from bpy.props import *
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bpy.utils import register_class
 from bpy.utils import unregister_class
+from bpy import props
 
 import time
 
@@ -25,40 +36,38 @@ bl_info = {
 # To support reload properly, try to access a package var, if it's there,
 # reload everything
 if "bpy" in locals():
-    import imp
+    import importlib as imp
     if "import_seanim" in locals():
-        imp.reload(import_seanim)
+        imp.reload( import_seanim )
 else:
     from . import import_seanim
 
 
-class ImportSEAnim(bpy.types.Operator, ImportHelper):
-    bl_idname = "import_scene.seanim"
-    bl_label = "Import SEAnim"
-    bl_description = "Import one or more SEAnim files"
-    bl_options = {'PRESET'}
+class ImportSEAnim( bpy.types.Operator, ImportHelper ):
+    bl_idname           = "import_scene.seanim"
+    bl_label            = "Import SEAnim"
+    bl_description      = "Import one or more SEAnim files"
+    bl_options          = {'PRESET'}
 
-    filename_ext = ".seanim"
-    filter_glob: StringProperty(default="*.seanim", options={'HIDDEN'})
+    filename_ext        = ".seanim"
+    filter_glob         = props.StringProperty( default="*.seanim", options={'HIDDEN'} )
 
-    files: CollectionProperty(type=bpy.types.PropertyGroup)
+    files               = props.CollectionProperty( type=bpy.types.PropertyGroup )
 
-    def execute(self, context):
+    def execute( self, context ):
         # print("Selected: " + context.active_object.name)
         from . import import_seanim
-        start_time = time.process_time()
-        result = import_seanim.load(
-            self, context, **self.as_keywords(ignore=("filter_glob", "files")))
+        start_time      = time.process_time()
+        result          = import_seanim.load( self, context, **self.as_keywords( ignore=("filter_glob", "files") ) )
         if not result:
-            self.report({'INFO'}, "Import finished in %.4f sec." %
-                        (time.process_time() - start_time))
+            self.report( {'INFO'}, "Import finished in %.4f sec." % ( time.process_time() - start_time ) )
             return {'FINISHED'}
         else:
-            self.report({'ERROR'}, result)
+            self.report( {'ERROR'}, result )
             return {'CANCELLED'}
 
     @classmethod
-    def poll(self, context):
+    def poll( self, context: bpy.types.Context ):
         if context.active_object is not None:
             if context.active_object.type == 'ARMATURE':
                 return True
@@ -72,18 +81,18 @@ class ImportSEAnim(bpy.types.Operator, ImportHelper):
         return False
 
 
-class ExportSEAnim(bpy.types.Operator, ExportHelper):
-    bl_idname = "export_scene.seanim"
-    bl_label = "Export SEAnim"
-    bl_description = "Export an SEAnim"
-    bl_options = {'PRESET'}
+class ExportSEAnim( bpy.types.Operator, ExportHelper ):
+    bl_idname           = "export_scene.seanim"
+    bl_label            = "Export SEAnim"
+    bl_description      = "Export an SEAnim"
+    bl_options          = {'PRESET'}
 
-    filename_ext = ".seanim"
-    filter_glob: StringProperty(default="*.seanim", options={'HIDDEN'})
+    filename_ext        = ".seanim"
+    filter_glob         = props.StringProperty( default="*.seanim", options={'HIDDEN'} )
 
-    files: CollectionProperty(type=bpy.types.PropertyGroup)
+    files               = CollectionProperty( type=bpy.types.PropertyGroup )
 
-    anim_type: EnumProperty(
+    anim_type           = EnumProperty(
         name="Anim Type",
         description="Choose between two items",
         items=(	('OPT_ABSOLUTE', "Absolute", "Used for viewmodel animations"),
@@ -93,7 +102,7 @@ class ExportSEAnim(bpy.types.Operator, ExportHelper):
         default='OPT_RELATIVE',
     )
 
-    key_types: EnumProperty(
+    key_types           = EnumProperty(
         name="Keyframe Types",
         description="Export specific keyframe types",
         options={'ENUM_FLAG'},
@@ -104,44 +113,45 @@ class ExportSEAnim(bpy.types.Operator, ExportHelper):
         default={'LOC', 'ROT'},  # , 'SCALE'},
     )
 
-    every_frame: BoolProperty(
+    every_frame         = BoolProperty(
         name="Every Frame",
         description="Automatically generate keyframes for every single frame",
         default=False)
 
-    high_precision: BoolProperty(
+    high_precision      = BoolProperty(
         name="High Precision",
         description=("Use double precision floating point values for "
                      "quaternions and vectors (Note: Increases file size)"),
         default=False)
 
-    is_looped: BoolProperty(
+    is_looped           = BoolProperty(
         name="Looped",
         description="Mark the animation as a looping animation",
         default=False)
 
-    use_actions: BoolProperty(
+    use_actions         = BoolProperty(
         name="Export All Actions",
         description="Export all actions to the target path",
         default=False)
 
     # PREFIX & SUFFIX Require "use_actions" to be true and are enabled /
     # disabled from __update_use_actions
-    prefix: StringProperty(
+    prefix              = StringProperty(
         name="File Prefix",
         description=("The prefix string that is applied to the beginning "
                      "of the filename for each exported action"),
         default="")
 
-    suffix: StringProperty(
+    suffix              = StringProperty(
         name="File Suffix",
         description=("The suffix string that is applied to the end "
                      "of the filename for each exported action"),
         default="")
 
-    def draw(self, context):
+    def draw( self, context ):
         layout = self.layout
-        layout.prop(self, "anim_type")
+        
+        layout.prop( self, "anim_type" )
 
         row = layout.row()
         row.label(text="Include:")
@@ -157,21 +167,20 @@ class ExportSEAnim(bpy.types.Operator, ExportHelper):
             box.prop(self, "prefix")
             box.prop(self, "suffix")
 
-    def execute(self, context):
+    def execute( self, context ):
         # print("Selected: " + context.active_object.name)
         from . import export_seanim
         start_time = time.process_time()
-        result = export_seanim.save(self, context)
+        result = export_seanim.save( self, context )
         if not result:
-            self.report({'INFO'}, "Export finished in %.4f sec." %
-                        (time.process_time() - start_time))
+            self.report( {'INFO'}, "Export finished in %.4f sec." % (time.process_time() - start_time) )
             return {'FINISHED'}
         else:
-            self.report({'ERROR'}, result)
+            self.report( {'ERROR'}, result )
             return {'CANCELLED'}
 
     @classmethod
-    def poll(self, context):
+    def poll( self, context: bpy.types.Context ):
         ob = context.active_object
         if ob is not None:
             if ob.type == 'ARMATURE' and ob.animation_data is not None:
@@ -186,19 +195,19 @@ class ExportSEAnim(bpy.types.Operator, ExportHelper):
         return False
 
 
-def get_operator(idname):
+def get_operator( idname ):
     op = bpy.ops
     for attr in idname.split("."):
-        op = getattr(op, attr)
+        op = getattr( op, attr )
     return op
 
 
-def menu_func_seanim_import(self, context):
-    self.layout.operator(ImportSEAnim.bl_idname, text="SEAnim (.seanim)")
+def menu_func_seanim_import( self, context ):
+    self.layout.operator( ImportSEAnim.bl_idname, text="SEAnim (.seanim)" )
 
 
-def menu_func_seanim_export(self, context):
-    self.layout.operator(ExportSEAnim.bl_idname, text="SEAnim (.seanim)")
+def menu_func_seanim_export( self, context):
+    self.layout.operator( ExportSEAnim.bl_idname, text="SEAnim (.seanim)" )
 
 
 '''
@@ -214,18 +223,18 @@ classes = (
 
 def register():
     for cls in classes:
-        bpy.utils.register_class(cls)
+        bpy.utils.register_class( cls )
 
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_seanim_import)
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_seanim_export)
+    bpy.types.TOPBAR_MT_file_import.append( menu_func_seanim_import )
+    bpy.types.TOPBAR_MT_file_export.append( menu_func_seanim_export )
 
 
 def unregister():
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_seanim_import)
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_seanim_export)
+    bpy.types.TOPBAR_MT_file_import.remove( menu_func_seanim_import )
+    bpy.types.TOPBAR_MT_file_export.remove( menu_func_seanim_export )
 
     for cls in classes:
-        bpy.utils.unregister_class(cls)
+        bpy.utils.unregister_class( cls )
 
 
 

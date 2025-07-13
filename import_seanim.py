@@ -104,7 +104,7 @@ def load(self, context, filepath=""):
         progress.leave_substeps("Finished!")
 
 
-def load_seanim(self, context, progress, filepath=""):
+def load_seanim( self, context: bpy.types.Context, progress, filepath="" ):
     anim = SEAnim.Anim(filepath)
 
     # Import the animation data
