@@ -12,24 +12,24 @@ except:
 
 # <pep8 compliant>
 
-LOG_READ_TIME = False
-LOG_WRITE_TIME = False
+LOG_READ_TIME           = False # Set to True to log the time it takes to read a file
+LOG_WRITE_TIME          = False # Set to True to log the time it takes to write a file
 
-LOG_ANIM_HEADER = False
-LOG_ANIM_BONES = False
+LOG_ANIM_HEADER         = False
+LOG_ANIM_BONES          = False
 LOG_ANIM_BONE_MODIFIERS = False
-LOG_ANIM_BONES_KEYS = False
-LOG_ANIM_NOTES = False
+LOG_ANIM_BONES_KEYS     = False
+LOG_ANIM_NOTES          = False
 
 
-class SEANIM_TYPE(IntEnum):
+class SEANIM_TYPE( IntEnum ):
     SEANIM_TYPE_ABSOLUTE = 0
     SEANIM_TYPE_ADDITIVE = 1
     SEANIM_TYPE_RELATIVE = 2
-    SEANIM_TYPE_DELTA = 3
+    SEANIM_TYPE_DELTA    = 3
 
 
-class SEANIM_PRESENCE_FLAGS(IntEnum):
+class SEANIM_PRESENCE_FLAGS( IntEnum ):
     # These describe what type of keyframe data is present for the bones
     SEANIM_BONE_LOC = 1 << 0
     SEANIM_BONE_ROT = 1 << 1
@@ -42,26 +42,29 @@ class SEANIM_PRESENCE_FLAGS(IntEnum):
     SEANIM_PRESENCE_CUSTOM = 1 << 7  # The file contains a custom data block
 
 
-class SEANIM_PROPERTY_FLAGS(IntEnum):
+class SEANIM_PROPERTY_FLAGS( IntEnum ):
     SEANIM_PRECISION_HIGH = 1 << 0
 
 
-class SEANIM_FLAGS(IntEnum):
+class SEANIM_FLAGS( IntEnum ):
     SEANIM_LOOPED = 1 << 0
 
 
-class Info(object):
-    __slots__ = ('version', 'magic')
+class Info( object ):
+    __slots__ = (
+        'version',
+        'magic'
+        )
 
-    def __init__(self, file=None):
+    def __init__( self, file=None ):
         self.version = 1
-        self.magic = b'SEAnim'
+        self.magic   = b'SEAnim'
         if file is not None:
-            self.load(file)
+            self.load( file )
 
-    def load(self, file):
-        bytes = file.read(8)
-        data = struct.unpack('6ch', bytes)
+    def load( self, file ):
+        bytes = file.read( 8 )
+        data = struct.unpack( '6ch', bytes )
 
         magic = b''
         for i in range(6):
@@ -72,22 +75,26 @@ class Info(object):
         assert magic == self.magic
         assert version == self.version
 
-    def save(self, file):
+    def save( self, file ):
         bytes = self.magic
-        bytes += struct.pack('h', self.version)
-        file.write(bytes)
+        bytes += struct.pack( 'h', self.version )
+        file.write( bytes )
 
 
-class Header(object):
+class Header( object ):
     __slots__ = (
-        'animType', 'animFlags',
-        'dataPresenceFlags', 'dataPropertyFlags',
-        'framerate', 'frameCount',
-        'boneCount', 'boneAnimModifierCount',
+        'animType',
+        'animFlags',
+        'dataPresenceFlags',
+        'dataPropertyFlags',
+        'framerate',
+        'frameCount',
+        'boneCount',
+        'boneAnimModifierCount',
         'noteCount'
-    )
+        )
 
-    def __init__(self, file=None):
+    def __init__( self, file=None ):
         self.animType = SEANIM_TYPE.SEANIM_TYPE_RELATIVE  # Relative is default
         self.animFlags = 0x0
 
@@ -106,13 +113,13 @@ class Header(object):
             self.load(file)
 
     def load(self, file):
-        bytes = file.read(2)
-        data = struct.unpack('h', bytes)
+        bytes = file.read( 2 )
+        data = struct.unpack( 'h', bytes )
 
         headerSize = data[0]
-        bytes = file.read(headerSize - 2)
+        bytes = file.read( headerSize - 2 )
         # = prefix tell is to ignore C struct packing rules
-        data = struct.unpack('=6BfII4BI', bytes)
+        data = struct.unpack( '=6BfII4BI', bytes )
 
         self.animType = data[0]
         self.animFlags = data[1]
@@ -129,7 +136,7 @@ class Header(object):
         # reserved = data[12]
         self.noteCount = data[13]
 
-    def save(self, file):
+    def save( self, file ):
         bytes = struct.pack('=6BfII4BI',
                             self.animType, self.animFlags,
                             self.dataPresenceFlags, self.dataPropertyFlags,
@@ -144,12 +151,15 @@ class Header(object):
         file.write(bytes)
 
 
-class Frame_t(object):
+class Frame_t( object ):
     """
     The Frame_t class is only ever used to get the size
     and format character used by frame indices in a given seanim file
     """
-    __slots__ = ('size', 'char')
+    __slots__ = (
+        'size',
+        'char'
+        )
 
     def __init__(self, header):
         if header.frameCount <= 0xFF:
@@ -163,14 +173,14 @@ class Frame_t(object):
             self.char = 'I'
 
 
-class Bone_t(object):
+class Bone_t( object ):
     """
     The Bone_t class is only ever used to get the size
     and format character used by frame indices in a given seanim file
     """
     __slots__ = ('size', 'char')
 
-    def __init__(self, header):
+    def __init__( self, header ):
         if header.boneCount <= 0xFF:
             self.size = 1
             self.char = 'B'
@@ -182,14 +192,17 @@ class Bone_t(object):
             self.char = 'I'
 
 
-class Precision_t(object):
+class Precision_t( object ):
     """
     The Precision_t class is only ever used to get the size
     and format character used by vec3_t, quat_t, etc. in a given sanim file
     """
-    __slots__ = ('size', 'char')
+    __slots__ = (
+        'size',
+        'char'
+        )
 
-    def __init__(self, header):
+    def __init__( self, header ):
         if (header.dataPropertyFlags &
                 SEANIM_PROPERTY_FLAGS.SEANIM_PRECISION_HIGH):
             self.size = 8
@@ -199,26 +212,32 @@ class Precision_t(object):
             self.char = 'f'
 
 
-class KeyFrame(object):
+class KeyFrame( object ):
     """
-    A small class used for holding keyframe data
+        A small class used for holding keyframe data
     """
-    __slots__ = ('frame', 'data')
+    __slots__ = ( 'frame', 'data' )
 
-    def __init__(self, frame, data):
+    def __init__( self, frame, data ):
         self.frame = frame
-        self.data = data
+        self.data  = data
 
 
-class Bone(object):
+class Bone( object ):
     __slots__ = (
-        'name', 'flags',
-        'locKeyCount', 'rotKeyCount', 'scaleKeyCount',
-        'posKeys', 'rotKeys', 'scaleKeys',
-        'useModifier', 'modifier'
-    )
+        'name',
+        'flags',
+        'locKeyCount',
+        'rotKeyCount',
+        'scaleKeyCount',
+        'posKeys',
+        'rotKeys',
+        'scaleKeys',
+        'useModifier',
+        'modifier'
+        )
 
-    def __init__(self, file=None):
+    def __init__( self, file=None ):
         self.name = ""
 
         self.flags = 0x0
@@ -235,9 +254,9 @@ class Bone(object):
         self.modifier = 0
 
         if file is not None:
-            self.load(file)
+            self.load( file )
 
-    def load(self, file):
+    def load( self, file ):
         bytes = b''
         b = file.read(1)
         while not b == b'\x00':
@@ -245,7 +264,7 @@ class Bone(object):
             b = file.read(1)
         self.name = bytes.decode("utf-8")
 
-    def loadData(self, file, frame_t, precision_t,
+    def loadData( self, file, frame_t, precision_t,
                  useLoc=False, useRot=False, useScale=False):
         # Read the flags for the bone
         bytes = file.read(1)
@@ -301,8 +320,8 @@ class Bone(object):
 
                 self.scaleKeys.append(KeyFrame(frame, scale))
 
-    def save(self, file, frame_t, bone_t, precision_t,
-             useLoc=False, useRot=False, useScale=False):
+    def save( self, file, frame_t, bone_t, precision_t,
+             useLoc=False, useRot=False, useScale=False ):
         bytes = struct.pack("B", self.flags)
         file.write(bytes)
 
@@ -341,8 +360,11 @@ class Bone(object):
                 file.write(bytes)
 
 
-class Note(object):
-    __slots__ = ('frame', 'name')
+class Note( object ):
+    __slots__ = (
+        'frame',
+        'name'
+        )
 
     def __init__(self, file=None, frame_t=None):
         self.frame = -1
@@ -372,24 +394,30 @@ class Note(object):
         file.write(bytes)
 
 
-class Anim(object):
-    __slots__ = ('__info', 'info', 'header', 'bones',
-                 'boneAnimModifiers', 'notes')
+class Anim( object ):
+    __slots__ = (
+        '__info', 
+        'info',
+        'header',
+        'bones',
+        'boneAnimModifiers',
+        'notes'
+        )
 
-    def __init__(self, path=None):
-        self.__info = Info()
-        self.header = Header()
+    def __init__( self, path=None ):
+        self.__info     = Info()
+        self.header     = Header()
 
-        self.bones = []
+        self.bones      = []
         self.boneAnimModifiers = []
-        self.notes = []
+        self.notes      = []
 
         if path is not None:
-            self.load(path)
+            self.load( path )
 
     # Update the header flags based on the presence of certain keyframe /
     # notetrack data
-    def update_metadata(self, high_precision=False, looping=False):
+    def update_metadata( self, high_precision=False, looping=False ):
         anim_locKeyCount = 0
         anim_rotKeyCount = 0
         anim_scaleKeyCount = 0
@@ -449,25 +477,25 @@ class Anim(object):
         # the max frame number (from keys / notes / etc.) and add 1 to it
         header.frameCount = max_frame_index + 1
 
-    def load(self, path):
+    def load( self, path ):
         if LOG_READ_TIME:
             time_start = time.time()
-            print("Loading: '%s'" % path)
+            print( "Loading: '%s'" % path )
 
         try:
-            file = open(path, "rb")
+            file = open( path, "rb" )
         except IOError:
-            print("Could not open file for reading:\n %s" % path)
+            print( "Could not open file for reading:\n %s" % path )
             return
 
-        self.info = Info(file)
-        self.header = Header(file)
+        self.info = Info( file )
+        self.header = Header( file )
         self.boneAnimModifiers = []
 
         # Init the frame_t, bone_t and precision_t info
-        frame_t = Frame_t(self.header)
-        bone_t = Bone_t(self.header)
-        precision_t = Precision_t(self.header)
+        frame_t = Frame_t( self.header )
+        bone_t = Bone_t( self.header )
+        precision_t = Precision_t( self.header )
 
         dataPresenceFlags = self.header.dataPresenceFlags
 
@@ -547,7 +575,7 @@ class Anim(object):
             time_elapsed = time_end - time_start
             print("Done! - Completed in %ss" % time_elapsed)
 
-    def save(self, filepath="", high_precision=False, looping=False):
+    def save( self, filepath="", high_precision=False, looping=False ):
         if LOG_WRITE_TIME:
             time_start = time.time()
             print("Saving: '%s'" % filepath)

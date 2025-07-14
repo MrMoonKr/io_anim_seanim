@@ -48,14 +48,14 @@ def gen_loc_key( frame, pose_bone, anim_type ):
 # Generate a SEAnim compatible ROT keyframe from a given pose bone
 
 
-def gen_rot_key(frame, pose_bone, anim_type):
-    quat = get_rot_quat(pose_bone, anim_type)
-    return SEAnim.KeyFrame(frame, (quat.x, quat.y, quat.z, quat.w))
+def gen_rot_key( frame, pose_bone, anim_type ):
+    quat = get_rot_quat( pose_bone, anim_type )
+    return SEAnim.KeyFrame( frame, ( quat.x, quat.y, quat.z, quat.w ) )
 
 
-def gen_scale_key(frame, pose_bone, anim_type):
+def gen_scale_key( frame, pose_bone, anim_type ):
     '''
-    Generate an SEAnim compatible SCALE keyframe from a given pose bone
+        Generate an SEAnim compatible SCALE keyframe from a given pose bone
     '''
     scale = tuple(pose_bone.scale)
     return SEAnim.KeyFrame(frame, scale)
@@ -63,8 +63,8 @@ def gen_scale_key(frame, pose_bone, anim_type):
 
 def resolve_animtype(self):
     """
-    Resolve an SEAnim compatible anim_type integer from the anim_type
-    EnumProperty
+        Resolve an SEAnim compatible anim_type integer from the anim_type
+        EnumProperty
     """
     at = self.anim_type
     type_dict = {	'OPT_ABSOLUTE': SEAnim.SEANIM_TYPE.SEANIM_TYPE_ABSOLUTE,
